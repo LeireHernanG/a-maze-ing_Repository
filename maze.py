@@ -11,6 +11,21 @@ from typing_extensions import Self
 # west = 0
 
 class Configuration(BaseModel):
+    """
+    Configuration model for maze generation settings.
+
+    This class defines the parameters required to generate a maze,
+    including its dimensions, entry and exit points, output file,
+    and whether the maze must be perfect (without loops).
+
+    Attributes:
+        width (int): Width of the maze (must be >= 2).
+        height (int): Height of the maze (must be >= 2).
+        entry (tuple[int, int]): Coordinates (x, y) of the maze entry point.
+        exit (tuple[int, int]): Coordinates (x, y) of the maze exit point.
+        output_file (str): File name where the maze will be saved.
+        perfect (bool): If True, generates a perfect maze (no cycles).
+    """
     width: int = Field(..., ge=2)
     height: int = Field(..., ge=2)
     entry: tuple[int, int]
@@ -20,6 +35,19 @@ class Configuration(BaseModel):
 
     @model_validator(mode='after')
     def check_rules(self) -> Self:
+        """
+        Validates that the configuration is consistent and valid.
+
+        Ensures that:
+        - Entry and exit coordinates are within maze bounds.
+        - Entry and exit are not the same point.
+
+        Returns:
+            Self: The validated configuration object.
+
+        Raises:
+            ValueError: If any validation rule is violated.
+        """
         if self.entry[0] >= self.width:
             raise ValueError('The entry x position is higher than the width')
         if self.entry[1] >= self.height:
@@ -31,7 +59,7 @@ class Configuration(BaseModel):
         if self.exit == self.entry:
             raise ValueError('The exit and the entry must bu different')
         
-        return(self)
+        return self
 
 
 class MazeGenerator():
@@ -44,19 +72,17 @@ class MazeGenerator():
         self.maze = np.full((maze_data.height, maze_data.width), 15)
         self.position = list(maze_data.entry)
         self.visited = np.full((maze_data.height, maze_data.width), 0)
-        self.solution = ""
         self.write_42()
 
 
-    def get_neighbors(self) -> list:
+    def get_neighbors(self, x: int, y: int) -> list:
         walls = []
         dirs = [
-                    (-1, 0, 0, 2),  # west
-                    (0, 1, 1, 3),   # south
-                    (1, 0, 2, 0),   # east
-                    (0, -1, 3, 1)   # north
+                    (-1, 0, 3, 1),  # west
+                    (0, 1, 2, 0),   # south
+                    (1, 0, 1, 3),   # east
+                    (0, -1, 0, 2)   # north
         ]
-        x, y = self.position
         for dir in dirs:
             if (0 <= (x + dir[0]) < self.width and
                     0 <= (y + dir[1]) < self.height and
@@ -66,16 +92,25 @@ class MazeGenerator():
 
     def remove_wall(self, neighbor: tuple):
         nx, ny, wall, opposite, x, y= neighbor
-        self.visited[y, x] = 1
 
         self.maze[y, x] &= ~(1 << wall)
         self.maze[ny, nx] &= ~(1 << opposite)
-        self.position = [nx, ny]
 
     def write_42(self):
+
+        # x0 = self.width // 2 - len(pattern[0]) // 2
+        # y0 = self.height // 2 - len(pattern) // 2
+        # pattern = [
+        #     '1   111'
+        #     '1     1'
+        #     '111 111'
+        #     '  1 1  '
+        #     '  1 111'
+        # ]
+        # for y, row in enumerate(pattern)
         if self.height >= 8 and self.width >= 10:
-            x = int(self.width / 2)
-            y = int(self.height / 2)
+            x = self.width // 2
+            y = self.height // 2
             for cell in range(1, 4):
                 self.visited[y, x + cell] = 42
                 self.visited[y, x - cell] = 42
@@ -86,7 +121,7 @@ class MazeGenerator():
                 self.visited[y + 2, x + cell] = 42
                 self.visited[y - 2, x + cell] = 42
             self.visited[y + 1, x + 1] = 42
-            self.visited[y - 1, x + 3,] = 42
+            self.visited[y - 1, x + ] = 42
 
     def all_visited(self):
         return (all(elem in (1, 42) for row in self.visited for elem in row))
@@ -101,27 +136,20 @@ class MazeGenerator():
         else:
             return 'N'
 
-    def gen_maze(self, sol: list | None = None):
-        if sol is None:
-            sol = []
-        self.visited[self.position[1], self.position[0]] = 1
-        walls = self.get_neighbors()
+    def gen_maze(self, x: int | None = None, y: int | None = None):
+        if x is None:
+            x = self.entry[0]
+        if y is None:
+            y = self.entry[1]
+        self.visited[y, x] = 1
+        walls = self.get_neighbors(x, y)
         while walls:
-            if self.all_visited():
-                return
-            self.visited[self.position[1], self.position[0]] = 1
-            remove = random.randint(0, len(walls) - 1) 
-            if self.visited[walls[remove][1], walls[remove][0]] == 1:
-                walls.pop(remove)
-            else:
-                self.remove_wall(walls[remove])
-                sol.append(self.transform_dir(walls[remove][2]))
-                if self.position == list(self.exit):
-                    self.solution = "".join(sol)
-                walls.pop(remove)
-                self.gen_maze(sol)
-            if sol:
-                sol.pop()
+            wall = walls.pop(random.randint(0, len(walls) - 1))
+            nx, ny = wall[0], wall[1]
+            if self.visited[ny, nx] == 0:
+                self.remove_wall(wall)
+                self.gen_maze(nx, ny)
+
 
 
 def read_configuration(file_name: str) -> Configuration:
@@ -162,7 +190,8 @@ def main():
             file.write('\n')
         file.write(f"\n{maze_1.entry[0]},{maze_1.entry[1]}\n")
         file.write(f"{maze_1.exit[0]},{maze_1.exit[1]}\n")
-        file.write(f"\n{maze_1.solution}\n")
+        print(maze_1.visited)
+        #file.write(f"\n{maze_1.solution}\n")
 
 
 if __name__ == '__main__':
