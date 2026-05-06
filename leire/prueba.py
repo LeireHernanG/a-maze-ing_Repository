@@ -52,12 +52,13 @@ def create_lab() -> None:
                 row.append(' ')
 
         row_idx = entry[0]*2 + 1
-        col_idx = entry[1]*4 + 2
-        screen[row_idx][col_idx] = 'O'
+        col_idx = entry[1]*2 + 1  
+        screen[row_idx][col_idx] = ' O ' 
 
         row_idx = exit[0]*2 + 1
-        col_idx = exit[1]*4 + 2
-        screen[row_idx][col_idx] = 'X'
+        col_idx = exit[1]*2 + 1
+        screen[row_idx][col_idx] = ' X '
+
 
         for line in screen:
             print("".join(line))
