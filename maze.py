@@ -70,12 +70,11 @@ class MazeGenerator():
         self.entry = maze_data.entry
         self.exit = maze_data.exit
         self.maze = np.full((maze_data.height, maze_data.width), 15)
-        self.position = list(maze_data.entry)
         self.visited = np.full((maze_data.height, maze_data.width), 0)
         self.write_42()
 
 
-    def get_neighbors(self, x: int, y: int) -> list:
+    def get_neighbors(self, col: int, row: int) -> list:
         walls = []
         dirs = [
                     (-1, 0, 3, 1),  # west
@@ -84,71 +83,50 @@ class MazeGenerator():
                     (0, -1, 0, 2)   # north
         ]
         for dir in dirs:
-            if (0 <= (x + dir[0]) < self.width and
-                    0 <= (y + dir[1]) < self.height and
-                    self.visited[y + dir[1], x + dir[0]] == 0):
-                walls.append((x + dir[0], y + dir[1], dir[2], dir[3], x, y))
+            if (0 <= (col + dir[0]) < self.width and
+                    0 <= (row + dir[1]) < self.height and
+                    self.visited[row + dir[1], col + dir[0]] == 0):
+                walls.append((col + dir[0], row + dir[1], dir[2], dir[3], col, row))
         return walls
 
     def remove_wall(self, neighbor: tuple):
-        nx, ny, wall, opposite, x, y= neighbor
+        ncol, nrow, wall, opposite, col, row = neighbor
 
-        self.maze[y, x] &= ~(1 << wall)
-        self.maze[ny, nx] &= ~(1 << opposite)
+        self.maze[row, col] &= ~(1 << wall)
+        self.maze[nrow, ncol] &= ~(1 << opposite)
 
     def write_42(self):
+        if self.height < 8 or self.width < 10:
+            return
+        pattern = [
+            '1   111',
+            '1     1',
+            '111 111',
+            '  1 1  ',
+            '  1 111'
+        ]
+        x0 = self.width // 2 - len(pattern[0]) // 2
+        y0 = self.height // 2 - len(pattern) // 2
+        for y, row in enumerate(pattern):
+            for x, value in enumerate(row):
+                if  value != ' ':
+                    self.visited[y0 + y, x0 + x] = 1
 
-        # x0 = self.width // 2 - len(pattern[0]) // 2
-        # y0 = self.height // 2 - len(pattern) // 2
-        # pattern = [
-        #     '1   111'
-        #     '1     1'
-        #     '111 111'
-        #     '  1 1  '
-        #     '  1 111'
-        # ]
-        # for y, row in enumerate(pattern)
-        if self.height >= 8 and self.width >= 10:
-            x = self.width // 2
-            y = self.height // 2
-            for cell in range(1, 4):
-                self.visited[y, x + cell] = 42
-                self.visited[y, x - cell] = 42
-            for cell in range(1, 3):
-                self.visited[y - cell, x - 3] = 42
-                self.visited[y + cell, x - 1] = 42  
-            for cell in range(1, 4):
-                self.visited[y + 2, x + cell] = 42
-                self.visited[y - 2, x + cell] = 42
-            self.visited[y + 1, x + 1] = 42
-            self.visited[y - 1, x + ] = 42
 
-    def all_visited(self):
-        return (all(elem in (1, 42) for row in self.visited for elem in row))
-    
-    def transform_dir(self, dir: int) -> str:
-        if dir == 0:
-            return('W')
-        elif dir == 1:
-            return 'S'
-        elif dir == 2:
-            return 'E'
-        else:
-            return 'N'
-
-    def gen_maze(self, x: int | None = None, y: int | None = None):
-        if x is None:
-            x = self.entry[0]
-        if y is None:
-            y = self.entry[1]
-        self.visited[y, x] = 1
-        walls = self.get_neighbors(x, y)
-        while walls:
-            wall = walls.pop(random.randint(0, len(walls) - 1))
-            nx, ny = wall[0], wall[1]
-            if self.visited[ny, nx] == 0:
+    def gen_maze(self):
+        self.visited[self.entry[1], self.entry[0]] = 1
+        stack = [(self.entry[0], self.entry[1])]
+        while stack:
+            col, row = stack[-1]
+            walls = self.get_neighbors(col, row)
+            if walls:
+                wall = random.choice(walls)
+                ncol, nrow = wall[0], wall[1]
                 self.remove_wall(wall)
-                self.gen_maze(nx, ny)
+                self.visited[nrow, ncol] = 1
+                stack.append((ncol, nrow))
+            else:
+                stack.pop()
 
 
 
