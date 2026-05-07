@@ -32,6 +32,7 @@ class Configuration(BaseModel):
     exit: tuple[int, int]
     output_file: str
     perfect: bool
+    seed: int = 42
 
     @model_validator(mode='after')
     def check_rules(self) -> Self:
@@ -155,8 +156,6 @@ class SolutionGenerator():
         self.visited[self.maze.exit[1], self.maze.exit[0]] = 1
         stack = [[self.maze.exit, []]]
         while True:
-            print(stack)
-            print()
             position, sol = stack[0]
             if position == self.maze.entry:
                 break
@@ -195,13 +194,13 @@ def read_configuration(file_name: str) -> Configuration:
 
 
 def main():
-    random.seed(123)
     try:
         config = read_configuration('config.txt')
         maze_1 = MazeGenerator(config)
     except ValueError as e:
         print(f"{e}")
         return
+    random.seed(config.seed)
     maze_1.gen_maze()
     solution = SolutionGenerator(maze_1)
     solution.get_solution()
