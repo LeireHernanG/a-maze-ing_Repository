@@ -58,7 +58,6 @@ class Configuration(BaseModel):
             raise ValueError('The exit y position is higher than the height')
         if self.exit == self.entry:
             raise ValueError('The exit and the entry must bu different')
-        
         return self
 
 
@@ -72,7 +71,6 @@ class MazeGenerator():
         self.maze = np.full((maze_data.height, maze_data.width), 15)
         self.visited = np.full((maze_data.height, maze_data.width), 0)
         self.write_42()
-
 
     def get_neighbors(self, col: int, row: int) -> list:
         walls = []
@@ -109,9 +107,8 @@ class MazeGenerator():
         y0 = self.height // 2 - len(pattern) // 2
         for y, row in enumerate(pattern):
             for x, value in enumerate(row):
-                if  value != ' ':
+                if value != ' ':
                     self.visited[y0 + y, x0 + x] = 1
-
 
     def gen_maze(self):
         self.visited[self.entry[1], self.entry[0]] = 1
@@ -127,6 +124,49 @@ class MazeGenerator():
                 stack.append((ncol, nrow))
             else:
                 stack.pop()
+
+
+class SolutionGenerator():
+
+    def __init__(self, maze: MazeGenerator):
+        self.maze = maze
+        self.solution = ''
+        self.visited = np.full((maze.height, maze.width), 0)
+
+    def get_neighbors(self, col: int, row: int) -> list:
+        neighbors = []
+        dirs = [
+                    (0, -1, 'S'),   # north
+                    (1, 0, 'W'),   # east
+                    (0, 1, 'N'),   # south
+                    (-1, 0, 'E')  # west            
+        ]
+        num_position = self.maze.maze[row, col]
+        for num in range(4):
+            if not (num_position & (1 << num)):
+                x, y, point  = dirs[num]
+                nx, ny = col + x, row + y
+                if self.visited[ny, nx] == 0:
+                    self.visited[ny, nx] = 1
+                    neighbors.append((nx, ny, point))
+        return neighbors
+
+    def get_solution(self):
+        self.visited[self.maze.exit[1], self.maze.exit[0]] = 1
+        stack = [[self.maze.exit, []]]
+        while True:
+            print(stack)
+            print()
+            position, sol = stack[0]
+            if position == self.maze.entry:
+                break
+            neighbours = self.get_neighbors(position[0], position[1])
+            for neighbour in neighbours:
+                x, y, point = neighbour
+                new_sol = sol + [point]
+                stack.append([(x, y), new_sol])
+            stack.pop(0)
+        self.solution = "".join(stack[0][1][::-1])
 
 
 
@@ -145,12 +185,14 @@ def read_configuration(file_name: str) -> Configuration:
                 elif value.capitalize() in ['True', 'False']:
                     config_dic[key] = value.capitalize()
                 else:
-                    config_dic[key]  = value
+                    config_dic[key] = value
             elif not line.startswith('#'):
-                raise ValueError(f"Error in {file_name}: There is a line that does not start with '#' or has the format 'KEY=VALUE'")
-                
+                raise ValueError(f"Error in {file_name}: There is a line that"
+                                 "does not start with '#' or has the format "
+                                 "'KEY=VALUE'")
     config = Configuration(**config_dic)
     return config
+
 
 def main():
     random.seed(123)
@@ -161,6 +203,8 @@ def main():
         print(f"{e}")
         return
     maze_1.gen_maze()
+    solution = SolutionGenerator(maze_1)
+    solution.get_solution()
     with open(config.output_file, 'w') as file:
         for row in maze_1.maze:
             line = " ".join([f"{num:X}" for num in row])
@@ -168,8 +212,10 @@ def main():
             file.write('\n')
         file.write(f"\n{maze_1.entry[0]},{maze_1.entry[1]}\n")
         file.write(f"{maze_1.exit[0]},{maze_1.exit[1]}\n")
-        print(maze_1.visited)
-        #file.write(f"\n{maze_1.solution}\n")
+        file.write(f"\n{solution.solution}\n")
+    
+    print(solution.visited)
+    print(solution.solution)
 
 
 if __name__ == '__main__':
