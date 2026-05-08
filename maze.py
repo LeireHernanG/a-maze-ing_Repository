@@ -3,6 +3,8 @@ import random
 from pydantic import (BaseModel, Field, ValidationError, model_validator)
 from typing import Any
 from typing_extensions import Self
+from collections import deque
+import math
 
 
 # north = 3
@@ -69,6 +71,7 @@ class MazeGenerator():
         self.height = maze_data.height
         self.entry = maze_data.entry
         self.exit = maze_data.exit
+        self.perfect = maze_data.perfect
         self.maze = np.full((maze_data.height, maze_data.width), 15)
         self.visited = np.full((maze_data.height, maze_data.width), 0)
         self.write_42()
@@ -111,6 +114,78 @@ class MazeGenerator():
                 if value != ' ':
                     self.visited[y0 + y, x0 + x] = 1
 
+    def possible_walls (self, position: tuple[int, int]) -> list[int]:
+        col, row = position
+        num_position = self.maze[row, col]
+        walls = []
+        
+        for num in range(4):
+            is_outer_wall = (
+                (num == 0 and row == 0) or
+                (num == 1 and col == self.width - 1) or
+                (num == 2 and row == self.height - 1) or
+                (num == 3 and col == 0)
+            )
+            if (not is_outer_wall and num_position & (1 << num)):
+                walls.append(num)
+        return (walls)
+
+    def can_remove_wall(self, position: tuple[int, int], wall: int) -> bool:
+        col, row = position
+        dirs = [
+                    (0, -1),   # north
+                    (1, 0),   # east
+                    (0, 1),   # south
+                    (-1, 0)  # west            
+        ]
+        if self.maze[row][col] in [1, 2, 4, 8]:
+            return False
+        for sum_col in [1, -1]:
+            for sum_row in[1, -1]:
+                ncol = col + sum_col
+                nrow = row + sum_row
+            if 0 <= ncol < self.width and 0 <= nrow < self.height:
+                if self.maze[nrow][ncol] == 0:
+                    return False
+        self.maze[row, col] &= ~(1 << wall)
+        opposite = wall + 2
+        if opposite > 3:
+            opposite -= 4
+        self.maze[row + dirs[wall][1]][col + dirs[wall][0]] &= ~(1 << opposite)
+        return True
+
+    def make_no_perfect(self):
+        num_cells = self.width * self.height
+        if num_cells < 300:
+            cut_cells = math.ceil(0.05 * num_cells)
+        elif num_cells < 1000:
+            cut_cells = math.ceil(0.1 * num_cells)
+        elif num_cells < 3000:
+            cut_cells = math.ceil(0.15 * num_cells)
+        else:
+            cut_cells = 0.20 * num_cells
+        solution = SolutionGenerator(self)
+        solution.get_solution()
+        sol = solution.solution
+        num_solutions = len(sol)
+        while num_solutions <= 1:
+            cells = 0
+            while cells < cut_cells:
+                removed =  False
+                while removed == False:
+                    position = (random.randint(0, self.width -1), random.randint(0, self.height -1))
+                    walls = self.possible_walls(position)
+                    for wall in walls:
+                        removed  = self.can_remove_wall(position, wall)
+                        if removed:
+                            cells += 1
+                            walls.clear()
+                            break
+            solution = SolutionGenerator(self)
+            solution.get_solution()
+            sol = solution.solution
+            num_solutions = len(sol)
+
     def gen_maze(self):
         self.visited[self.entry[1], self.entry[0]] = 1
         stack = [(self.entry[0], self.entry[1])]
@@ -125,13 +200,16 @@ class MazeGenerator():
                 stack.append((ncol, nrow))
             else:
                 stack.pop()
+        if not self.perfect:
+            self.make_no_perfect()
+
 
 
 class SolutionGenerator():
 
     def __init__(self, maze: MazeGenerator):
         self.maze = maze
-        self.solution = ''
+        self.solution: list[str] = []
         self.visited = np.full((maze.height, maze.width), 0)
 
     def get_neighbors(self, col: int, row: int) -> list:
@@ -147,25 +225,25 @@ class SolutionGenerator():
             if not (num_position & (1 << num)):
                 x, y, point  = dirs[num]
                 nx, ny = col + x, row + y
-                if self.visited[ny, nx] == 0:
-                    self.visited[ny, nx] = 1
-                    neighbors.append((nx, ny, point))
+                neighbors.append((nx, ny, point))
         return neighbors
 
     def get_solution(self):
         self.visited[self.maze.exit[1], self.maze.exit[0]] = 1
-        stack = [[self.maze.exit, []]]
-        while True:
-            position, sol = stack[0]
+        stack = [[self.maze.exit, [], [self.maze.exit]]]
+        while stack:
+            position, sol, visited = stack[0]
             if position == self.maze.entry:
-                break
-            neighbours = self.get_neighbors(position[0], position[1])
-            for neighbour in neighbours:
-                x, y, point = neighbour
-                new_sol = sol + [point]
-                stack.append([(x, y), new_sol])
+                self.solution.append ("".join(stack[0][1][::-1]))
+            else:
+                neighbours = self.get_neighbors(position[0], position[1])
+                for x, y, point in neighbours:
+                    if (x, y) not in visited:
+                        new_sol = sol + [point]
+                        new_visited = visited + [(x,y)]
+                        stack.append([(x, y), new_sol, new_visited])
             stack.pop(0)
-        self.solution = "".join(stack[0][1][::-1])
+        
 
 
 
@@ -211,9 +289,8 @@ def main():
             file.write('\n')
         file.write(f"\n{maze_1.entry[0]},{maze_1.entry[1]}\n")
         file.write(f"{maze_1.exit[0]},{maze_1.exit[1]}\n")
-        file.write(f"\n{solution.solution}\n")
+        file.write(f"{solution.solution[0]}\n")
     
-    print(solution.visited)
     print(solution.solution)
 
 
