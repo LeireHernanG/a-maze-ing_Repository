@@ -1,5 +1,6 @@
-from maze import (Configuration, SolutionGenerator, MazeGenerator,
-                  ValidationError, random)
+from maze import Configuration, SolutionGenerator, MazeGenerator
+from pydantic import ValidationError
+import random
 from typing import Any
 
 
@@ -27,7 +28,7 @@ def read_configuration(file_name: str) -> Configuration:
     return config
 
 
-def main():
+def main() -> None:
     try:
         config = read_configuration('config.txt')
         maze = MazeGenerator(config)

@@ -2,6 +2,7 @@ import numpy as np
 import random
 from pydantic import (BaseModel, Field, ValidationError, model_validator,
                       PrivateAttr)
+from typing import Any
 from typing_extensions import Self
 from collections import deque
 import math
@@ -36,7 +37,7 @@ class Configuration(BaseModel):
     seed: int = 42
     _visited = PrivateAttr()
 
-    def model_post_init(self, __context) -> None:
+    def model_post_init(self, __context: dict[str, Any]) -> None:
         """
         Initialize the _visited grid with the '42' pattern after model
         creation.
@@ -121,7 +122,8 @@ class MazeGenerator():
         self.maze = np.full((maze_data.height, maze_data.width), 15)
         self.visited = maze_data._visited
 
-    def __get_available_walls(self, col: int, row: int) -> list:
+    def __get_available_walls(self, col: int, row: int) -> list[tuple[int, int,
+                                                                      int]]:
         """Return a list of unvisited neighboring walls for a given cell."""
         walls = []
         for dx, dy, wall in self._directions:
@@ -131,7 +133,7 @@ class MazeGenerator():
                 walls.append((col, row, wall))
         return walls
 
-    def __remove_wall(self, neighbor: tuple) -> tuple[int, int]:
+    def __remove_wall(self, neighbor: tuple[int, int, int]) -> tuple[int, int]:
         """
             Remove the wall between a cell and its neighbor,
             returning neighbor coordinates.
@@ -148,7 +150,7 @@ class MazeGenerator():
 
     def __possible_walls(self, position: tuple[int, int]) -> list[int]:
         """
-            Return walls that can be safely removed to create 
+            Return walls that can be safely removed to create
             loops in the maze.
         """
         col, row = position
@@ -186,7 +188,7 @@ class MazeGenerator():
         solution.get_solution()
         return len(solution.solution) > 1
 
-    def __make_no_perfect(self):
+    def __make_no_perfect(self) -> None:
         """Randomly remove walls to make the maze imperfect"""
         num_cells = self.width * self.height
         if num_cells < 300:
@@ -207,7 +209,7 @@ class MazeGenerator():
                 self.__remove_wall((position[0], position[1], wall))
             attemps += 1
 
-    def gen_maze(self):
+    def gen_maze(self) -> None:
         """
             Generate the maze using depth-first search and
             optionally add loops if imperfect.
@@ -236,7 +238,7 @@ class SolutionGenerator():
         self.maze = maze
         self.solution: list[str] = []
 
-    def get_neighbors(self, col: int, row: int) -> list:
+    def get_neighbors(self, col: int, row: int) -> list[tuple[int, int, str]]:
         neighbors = []
         dirs = [
                     (0, -1, 'S'),   # north
@@ -252,8 +254,10 @@ class SolutionGenerator():
                 neighbors.append((nx, ny, point))
         return neighbors
 
-    def get_solution(self):
-        queue = deque([[self.maze.entry, [], {self.maze.entry}]])
+    def get_solution(self) -> None:
+        queue: deque[tuple[tuple[int, int], list[str], set[tuple[int,
+                                                           int]]]] = deque()
+        queue.append((self.maze.entry, [], {self.maze.entry}))
         while queue:
             position, sol, visited = queue.popleft()
             if position == self.maze.exit:
@@ -264,9 +268,4 @@ class SolutionGenerator():
                     if (x, y) not in visited:
                         new_sol = sol + [point]
                         new_visited = visited | {(x, y)}
-                        queue.append([(x, y), new_sol, new_visited])
-
-
-
-
-
+                        queue.append(((x, y), new_sol, new_visited))
