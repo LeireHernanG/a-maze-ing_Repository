@@ -1,56 +1,95 @@
 import numpy as np
 import random
-from pydantic import (BaseModel, Field, ValidationError, model_validator,
-                      PrivateAttr)
-from typing import Any
-from typing_extensions import Self
 from collections import deque
 import math
-from numpy.typing import NDArray
 
 
-class Configuration(BaseModel):
-
+class MazeGenerator:
     """
-    Configuration model for maze generation settings.
-
-    Defines the parameters required to generate a maze, including dimensions,
-    entry/exit points, output file, and whether the maze is perfect (no loops).
+    MazeGenerator: Generates a maze using depth-first search
+    with optional loops.
 
     Attributes:
         width (int): Width of the maze (minimum 2).
         height (int): Height of the maze (minimum 2).
-        entry (tuple[int, int]): Coordinates (x, y) of the maze entry point.
-        exit (tuple[int, int]): Coordinates (x, y) of the maze exit point.
-        output_file (str): File name where the maze will be saved.
-        perfect (bool): If True, generates a perfect maze with one solution.
-        seed (int): Random seed used for maze generation (default: 42).
-        _visited (NDArray[np.int_]): Internal grid tracking visited cells and
-            the '42' pattern to avoid placing entry/exit points on it.
+        entry (tuple[int, int]): Entry point coordinates (x, y).
+        exit (tuple[int, int]): Exit point coordinates (x, y).
+        perfect (bool): If True, generates a perfect maze (one solution).
+        seed (int): Random seed for reproducibility (default=42).
+        output_file (str): Optional file name for saving the maze
+        (not used in generation).
+        maze (np.ndarray): Generated maze represented as integers
+        (bitwise walls).
+        solution (list[str]): List of solution paths from entry to exit.
+
+    Example:
+        generator = maze = MazeGenerator(
+                                width=5,
+                                height=5,
+                                entry=(0, 0),
+                                exit=(3, 3),
+                                output_file=maze.txt,
+                                perfect=False,
+                                seed=123
+        )
+        generator.gen_maze()
+        print(generator.maze)        # Access maze structure
+        print(generator.solution)    # Access solution(s)
     """
-    width: int = Field(..., ge=2)
-    height: int = Field(..., ge=2)
-    entry: tuple[int, int]
-    exit: tuple[int, int]
-    output_file: str
-    perfect: bool
-    seed: int = 42
-    _visited = PrivateAttr()
 
-    def model_post_init(self, __context: dict[str, Any]) -> None:
-        """
-        Initialize the _visited grid with the '42' pattern after model
-        creation.
-        """
-        self._visited = self.__write_42()
+    _directions = [
+                    (0, -1, 0),   # north
+                    (1, 0, 1),   # east
+                    (0, 1, 2),   # south
+                    (-1, 0, 3)  # west
+                ]
 
-    def __write_42(self) -> NDArray[np.int_]:
+    def __init__(
+                    self, width: int, height: int, entry: tuple[int, int],
+                    exit: tuple[int, int], output_file: str, perfect: bool,
+                    seed: int = 42
+                ):
+        self.width = width
+        self.height = height
+        self.entry = entry
+        self.exit = exit
+        self.perfect = perfect
+        self.seed = seed
+        self.output_file = output_file
+        self.maze = np.full((height, width), 15)
+        self._visited = np.full((height, width), 0)
+        self.solution: list[str] = []
+        self.__write_42()
+        self.__validate()
+
+    def __validate(self) -> None:
+        """Validate maze parameters and entry/exit positions."""
+        if self.width < 2:
+            raise ValueError('The width must be higher')
+        if self.height < 2:
+            raise ValueError('The height must be higher')
+        if not (0 <= self.entry[0] < self.width - 1):
+            raise ValueError('The entry x position is out of bounds')
+        if not (0 <= self.entry[1] < self.height - 1):
+            raise ValueError('The entry y position is out of bounds')
+        if not (0 <= self.exit[0] < self.width - 1):
+            raise ValueError('The exit x position is out of bounds')
+        if not (0 <= self.exit[1] < self.height):
+            raise ValueError('The exit y position is out of bounds')
+        if self.exit == self.entry:
+            raise ValueError('The exit and the entry must bu different')
+        if self._visited[self.entry[1], self.entry[0]] == 1:
+            raise ValueError('The entry position is in the 42 pattern')
+        if self._visited[self.exit[1], self.exit[0]] == 1:
+            raise ValueError('The exit position is in the 42 pattern')
+
+    def __write_42(self) -> None:
         """
-            Return a grid marking the '42' pattern (1 for pattern, 0 otherwise)
+            Mark the '42' pattern in the visited grid to block entry/exit
+            placement and open walls in this cellls.
         """
-        visited = np.full((self.height, self.width), 0)
         if self.height < 8 or self.width < 10:
-            return visited
+            return
         pattern = [
             '1   111',
             '1     1',
@@ -63,73 +102,56 @@ class Configuration(BaseModel):
         for y, row in enumerate(pattern):
             for x, value in enumerate(row):
                 if value != ' ':
-                    visited[y0 + y, x0 + x] = 1
-        return visited
+                    self._visited[y0 + y, x0 + x] = 1
 
-    @model_validator(mode='after')
-    def check_rules(self) -> Self:
-        """
-        Validates that the configuration is consistent and valid.
+    def __accessible_neighbors(
+        self, col: int, row: int
+    ) -> list[tuple[int, int, str]]:
+        """Return accessible neighbors of a cell for computing solutions."""
+        neighbors = []
+        points = ['N', 'E', 'S', 'W']
+        cell_value = self.maze[row, col]
+        for num in range(4):
+            if not (cell_value & (1 << num)):
+                x, y, direction = self._directions[num]
+                nx, ny = col + x, row + y
+                neighbors.append((nx, ny, points[direction]))
+        return neighbors
 
-        Ensures that:
-        - Entry and exit coordinates are within maze bounds.
-        - Entry and exit are not the same point.
-        - Entry and exit are not placed in the 42 pattern.
+    def __compute_solution(self) -> None:
+        """Compute all possible solutions from entry to exit."""
+        queue: deque[
+            tuple[
+                tuple[int, int],
+                list[str],
+                set[tuple[int, int]]
+            ]
+        ] = deque()
+        queue.append((self.entry, [], {self.entry}))
+        while queue:
+            position, sol, visited = queue.popleft()
+            if position == self.exit:
+                self.solution.append("".join(sol))
+            else:
+                neighbours = self.__accessible_neighbors(
+                    position[0],
+                    position[1]
+                )
+                for x, y, point in neighbours:
+                    if (x, y) not in visited:
+                        new_sol = sol + [point]
+                        new_visited = visited | {(x, y)}
+                        queue.append(((x, y), new_sol, new_visited))
 
-        Returns:
-            Self: The validated configuration object.
-
-        Raises:
-            ValidationError: If any validation rule is violated.
-        """
-        if self.entry[0] >= self.width:
-            raise ValidationError('The entry x position is higher than the'
-                                  'width')
-        if self.entry[1] >= self.height:
-            raise ValidationError('The entry y position is higher than the'
-                                  'height')
-        if self.exit[0] >= self.width:
-            raise ValidationError('The exit x position is higher than the'
-                                  'width')
-        if self.exit[1] >= self.height:
-            raise ValidationError('The exit y position is higher than the'
-                                  'height')
-        if self.exit == self.entry:
-            raise ValidationError('The exit and the entry must bu different')
-        if self._visited[self.entry[1], self.entry[0]] == 1:
-            raise ValidationError('The entry position is in the 42 pattern')
-        if self._visited[self.exit[1], self.exit[0]] == 1:
-            raise ValidationError('The exit position is in the 42 pattern')
-        return self
-
-
-class MazeGenerator():
-
-    _directions = [
-                    (0, -1, 0),   # north
-                    (1, 0, 1),   # east
-                    (0, 1, 2),   # south
-                    (-1, 0, 3)  # west
-                ]
-
-    def __init__(self, maze_data: Configuration):
-        """Initialize the maze generator with configuration data."""
-        self.width = maze_data.width
-        self.height = maze_data.height
-        self.entry = maze_data.entry
-        self.exit = maze_data.exit
-        self.perfect = maze_data.perfect
-        self.maze = np.full((maze_data.height, maze_data.width), 15)
-        self.visited = maze_data._visited
-
-    def __get_available_walls(self, col: int, row: int) -> list[tuple[int, int,
-                                                                      int]]:
-        """Return a list of unvisited neighboring walls for a given cell."""
+    def __get_available_walls(
+            self, col: int, row: int
+    ) -> list[tuple[int, int, int]]:
+        """Return unvisited neighboring walls for DFS generation."""
         walls = []
         for dx, dy, wall in self._directions:
             if (0 <= (col + dx) < self.width and
                     0 <= (row + dy) < self.height and
-                    self.visited[row + dy, col + dx] == 0):
+                    self._visited[row + dy, col + dx] == 0):
                 walls.append((col, row, wall))
         return walls
 
@@ -149,14 +171,11 @@ class MazeGenerator():
         return (ncol, nrow)
 
     def __possible_walls(self, position: tuple[int, int]) -> list[int]:
-        """
-            Return walls that can be safely removed to create
-            loops in the maze.
-        """
+        """Return walls that can be removed to create loops."""
         col, row = position
-        num_position = self.maze[row, col]
+        cell_value = self.maze[row, col]
         walls: list[int] = []
-        if not num_position == 15:
+        if not cell_value == 15:
             for num in range(4):
                 is_outer_wall = (
                     (num == 0 and row == 0) or
@@ -164,7 +183,7 @@ class MazeGenerator():
                     (num == 2 and row == self.height - 1) or
                     (num == 3 and col == 0)
                 )
-                if (not is_outer_wall and num_position & (1 << num)):
+                if (not is_outer_wall and cell_value & (1 << num)):
                     cells_with_walls = True
                     for sum_col in [1, 0, -1]:
                         for sum_row in [1, 0, -1]:
@@ -181,12 +200,6 @@ class MazeGenerator():
                     if cells_with_walls:
                         walls.append(num)
         return walls
-
-    def __more_than_one_solution(self) -> bool:
-        """Check if the maze has more than one valid solution."""
-        solution = SolutionGenerator(self)
-        solution.get_solution()
-        return len(solution.solution) > 1
 
     def __make_no_perfect(self) -> None:
         """Randomly remove walls to make the maze imperfect"""
@@ -214,7 +227,7 @@ class MazeGenerator():
             Generate the maze using depth-first search and
             optionally add loops if imperfect.
         """
-        self.visited[self.entry[1], self.entry[0]] = 1
+        self._visited[self.entry[1], self.entry[0]] = 1
         stack = [(self.entry[0], self.entry[1])]
         while stack:
             col, row = stack[-1]
@@ -222,50 +235,14 @@ class MazeGenerator():
             if walls:
                 wall = random.choice(walls)
                 ncol, nrow = self.__remove_wall(wall)
-                self.visited[nrow, ncol] = 1
+                self._visited[nrow, ncol] = 1
                 stack.append((ncol, nrow))
             else:
                 stack.pop()
+        self.__compute_solution()
         if not self.perfect:
             self.__make_no_perfect()
-            while not self.__more_than_one_solution():
+            self.__compute_solution()
+            while len(self.solution) <= 1:
                 self.__make_no_perfect()
-
-
-class SolutionGenerator():
-
-    def __init__(self, maze: MazeGenerator):
-        self.maze = maze
-        self.solution: list[str] = []
-
-    def get_neighbors(self, col: int, row: int) -> list[tuple[int, int, str]]:
-        neighbors = []
-        dirs = [
-                    (0, -1, 'S'),   # north
-                    (1, 0, 'W'),   # east
-                    (0, 1, 'N'),   # south
-                    (-1, 0, 'E')  # west
-        ]
-        num_position = self.maze.maze[row, col]
-        for num in range(4):
-            if not (num_position & (1 << num)):
-                x, y, point = dirs[num]
-                nx, ny = col + x, row + y
-                neighbors.append((nx, ny, point))
-        return neighbors
-
-    def get_solution(self) -> None:
-        queue: deque[tuple[tuple[int, int], list[str], set[tuple[int,
-                                                           int]]]] = deque()
-        queue.append((self.maze.entry, [], {self.maze.entry}))
-        while queue:
-            position, sol, visited = queue.popleft()
-            if position == self.maze.exit:
-                self.solution.append("".join(sol))
-            else:
-                neighbours = self.get_neighbors(position[0], position[1])
-                for x, y, point in neighbours:
-                    if (x, y) not in visited:
-                        new_sol = sol + [point]
-                        new_visited = visited | {(x, y)}
-                        queue.append(((x, y), new_sol, new_visited))
+                self.__compute_solution()
