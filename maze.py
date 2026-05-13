@@ -120,6 +120,7 @@ class MazeGenerator:
 
     def __compute_solution(self) -> None:
         """Compute all possible solutions from entry to exit."""
+        self.solution.clear()
         queue: deque[
             tuple[
                 tuple[int, int],
