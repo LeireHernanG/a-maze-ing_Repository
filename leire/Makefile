@@ -9,7 +9,7 @@ all: install
 install:
 	$(PIP) install -r requirements.txt
 run:
-	$(PYTHON) $(SCRIPT) config.txt
+	$(PYTHON) main.py config.txt
 
 debug:
 	$(PYTHON) -m pdb $(SCRIPT)
