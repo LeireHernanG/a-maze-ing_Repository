@@ -68,11 +68,11 @@ class MazeGenerator:
             raise ValueError('The width must be higher')
         if self.height < 2:
             raise ValueError('The height must be higher')
-        if not (0 <= self.entry[0] < self.width - 1):
+        if not (0 <= self.entry[0] < self.width):
             raise ValueError('The entry x position is out of bounds')
-        if not (0 <= self.entry[1] < self.height - 1):
+        if not (0 <= self.entry[1] < self.height):
             raise ValueError('The entry y position is out of bounds')
-        if not (0 <= self.exit[0] < self.width - 1):
+        if not (0 <= self.exit[0] < self.width):
             raise ValueError('The exit x position is out of bounds')
         if not (0 <= self.exit[1] < self.height):
             raise ValueError('The exit y position is out of bounds')
