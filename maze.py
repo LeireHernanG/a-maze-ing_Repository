@@ -77,7 +77,7 @@ class MazeGenerator:
         if not (0 <= self.exit[1] < self.height):
             raise ValueError('The exit y position is out of bounds')
         if self.exit == self.entry:
-            raise ValueError('The exit and the entry must bu different')
+            raise ValueError('The exit and the entry must be different')
         if self._visited[self.entry[1], self.entry[0]] == 1:
             raise ValueError('The entry position is in the 42 pattern')
         if self._visited[self.exit[1], self.exit[0]] == 1:

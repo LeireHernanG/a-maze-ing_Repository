@@ -2,7 +2,8 @@ from maze import MazeGenerator
 from pydantic import ValidationError
 import random
 from typing import Any
-
+import sys
+from prueba import menu
 
 def read_configuration(file_name: str) -> dict:
     config_dic: dict[str, Any] = {}
@@ -31,9 +32,12 @@ def read_configuration(file_name: str) -> dict:
     return config_dic
 
 
-def main() -> None:
+def main(seed:bool|None=None) -> str:
+    error = 0
     try:
         config = read_configuration('config.txt')
+        if seed:
+            config['SEED']= random.randint(0,100)
         maze = MazeGenerator(
                                 width=config['WIDTH'],
                                 height=config['HEIGHT'],
@@ -44,8 +48,7 @@ def main() -> None:
                                 seed=config['SEED']
         )
     except (ValueError, ValidationError) as e:
-        print(f"{e}")
-        return
+        raise ValueError(f"{e}")
     random.seed(maze.seed)
     maze.gen_maze()
     with open(maze.output_file, 'w') as file:
@@ -56,10 +59,16 @@ def main() -> None:
         file.write(f"\n{maze.entry[0]},{maze.entry[1]}\n")
         file.write(f"{maze.exit[0]},{maze.exit[1]}\n")
         file.write(f"{maze.solution[0]}\n")
-
-    print(maze.maze)
-    print(maze.solution)
+    return(config['OUTPUT_FILE'])
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        filename=main()
+        option =menu(filename)
+        while option >0:
+            if option == 1:
+                main(True)
+            option = menu(filename)
+    except Exception as e:
+        print(f"Couldn't make the maze:{e}")
