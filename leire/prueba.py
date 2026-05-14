@@ -1,11 +1,11 @@
 import sys
 import os
-from colorama import Style
 from maze import MazeGenerator
-from maze import MazeGenerator
-from pydantic import ValidationError
+#from pydantic import ValidationError
 import random
 from typing import Any
+from colorama import init, Fore, Back, Style
+import time
 
 path = {
     "show_path": False
@@ -25,9 +25,9 @@ colors = {
     
 def menu(output_file:str) -> int:
         create_lab(output_file)
-        print("\n=== A-Maze_ing ===")
-        print("1. Regenerate a new maze\n2. Show/Hide path from entry to exit\n3. Rotate maze colors\n4. Quit")
-        valor = input("valor? (1-4): ").strip()
+        print(Style.BRIGHT + Fore.BLUE +"\n⭐▁ ▂ ▃ ▅ ▆ ▇ ▌ A-Maze-Ing ▐ ▇ ▆ ▅ ▃ ▂ ▁⭐​")
+        print("\n1. Regenerate a new maze 🔄​\n2. Show/Hide path from entry to exit ​👁️‍🗨️​\n3. Rotate maze colors​ 🔴​🟢​🔵​\n4. Quit ​⛔​")
+        valor = input("\n-Select an option? (1-4): ").strip()
 
         if not valor.isdigit():
             return 5
@@ -37,44 +37,49 @@ def menu(output_file:str) -> int:
             return 1
         elif valor == 2:
             path["show_path"] = not path["show_path"]
-            create_lab(output_file)
             return 2
         elif valor == 3:
             print("\n=== Rotate maze colors ===")
-            print("1. Classic")
-            print("2. Electric blue")
+            print("1. Mario bros")
+            print("2. Tasty banana")
             print("3. Hot pink")
-            theme = int(input("Choose theme: "))
+            theme = input("Choose theme: ").strip()
+            if not theme.isdigit():
+                return 4
+            theme = int(theme)
             if theme == 1:
                 colors["wall"]= "#29a93e"
                 colors["path"]= "#ffffff"
                 colors["corners"]="#bef14b"
                 colors["exit_icon_back"]="#c91f1f"
-                colors["entry_icon_back"]="#0026FF"
+                colors["entry_icon_back"]="#A2FF92"
                 colors["exit_icon_fore"]="#ffffff"
                 colors["entry_icon_fore"]="#ffffff"
                 colors["42"]="#f2b603"
 
             elif theme == 2:
-                colors["wall"] = "#1e90ff"
-                colors["corners"] = "#87cefa"
-                colors["entry_icon_back"]="#ff9d00"
-                colors["exit_icon_back"]="#96f23a"
+                colors["wall"] = "#ffea00"
+                colors["corners"] = "#b04fff"
+                colors["entry_icon_back"]="#86ff62"
+                colors["exit_icon_back"]="#ff5d5d"
                 colors["exit_icon_fore"]="#FFFFFF"
+                colors["42"]="#ffffff"
+                colors["path"]= "#ffea00"
                 
             elif theme == 3:
-                colors["wall"] = "#ff00d0"
-                colors["corners"] = "#fea6ff"
-                colors["entry_icon_back"]="#3f14ff"
+                colors["wall"] = "#00ffd0"
+                colors["corners"] = "#0d0de7"
+                colors["entry_icon_back"]="#d8e829"
                 colors["entry_icon_fore"]="#5E005F"
-                colors["exit_icon_back"]="#96f23a"
-                colors["exit_icon_fore"]="#000000"
+                colors["exit_icon_back"]="#c431f9"
+                colors["exit_icon_fore"]="#FFFFFF"
+                colors["path"]= "#ffff00"
+                colors["42"]="#f10d51"
             create_lab(output_file)
             return 3
         elif valor == 4:
             print("Good bye!")
             return 0
-        
         else:
             print("Invalid number")
             return 5
@@ -159,9 +164,9 @@ def create_lab(output_file:str) -> None:
 
         if path["show_path"]:
             solution_path(entry, screen, exit, solution)
-
-        for line in screen:
-            print("".join(line))
+        else:
+            for line in screen:
+                print("".join(line))
 
     except PermissionError as e:
         print(f"Error opening file '{sys.argv[1]}': {e}")
@@ -182,13 +187,18 @@ def solution_path(entry, screen,exit, solution):
         elif paso == 'W':
             col_idx -= 1
         
-        visual_row = row_indx*2 +1 
-        visual_col = col_idx*2 +1 
+        visual_row = row_indx * 2 + 1
+        visual_col = col_idx * 2 + 1
+
         if row_indx == exit[1] and col_idx == exit[0]:
-           break
+            return
         else:
-            screen[visual_row][visual_col] =  imprimir_color(' * ', colors["path"])
-        
+            screen[visual_row][visual_col] = imprimir_color(' + ',colors["path"])
+
+            print("\033[H\033[J", end="")
+            for line in screen:
+                print("".join(line))
+            time.sleep(0.05)
 
 
 def imprimir_color(texto, fg_hex=None, bg_hex=None):
