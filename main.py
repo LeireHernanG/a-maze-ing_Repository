@@ -80,7 +80,7 @@ def main(option_is_one: bool | None = None) -> Any:
             file.write('\n')
         file.write(f"\n{maze.entry[0]},{maze.entry[1]}\n")
         file.write(f"{maze.exit[0]},{maze.exit[1]}\n")
-        file.write(f"{maze.solution[0]}\n")
+        file.write(f"{maze.solution}\n")
     return config['OUTPUT_FILE']
 
 

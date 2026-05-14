@@ -1,5 +1,7 @@
 import numpy as np
+import numpy.typing as npt
 import random
+from typing import Deque
 from collections import deque
 import math
 
@@ -51,10 +53,9 @@ class MazeGenerator:
         self.exit = exit
         self.perfect = perfect
         self.seed = seed
+        self.solution = ''
         self.structure = np.full((height, width), 15)
-        self._visited = np.full((height, width), 0)
-        self.solution: list[str] = []
-        self.__write_42()
+        self._visited = self.__write_42()
         self.__validate()
 
     def __validate(self) -> None:
@@ -78,13 +79,14 @@ class MazeGenerator:
         if self._visited[self.exit[1], self.exit[0]] == 1:
             raise ValueError('The exit position is in the 42 pattern')
 
-    def __write_42(self) -> None:
+    def __write_42(self) -> npt.NDArray[np.int_]:
         """
             Mark the '42' pattern in the visited grid to block entry/exit
             placement and open walls in this cellls.
         """
+        visited = np.full((self.height, self.width), 0)
         if self.height < 8 or self.width < 10:
-            return
+            return visited
         pattern = [
             '1   111',
             '1     1',
@@ -97,7 +99,8 @@ class MazeGenerator:
         for y, row in enumerate(pattern):
             for x, value in enumerate(row):
                 if value != ' ':
-                    self._visited[y0 + y, x0 + x] = 1
+                    visited[y0 + y, x0 + x] = 1
+        return  visited
 
     def __accessible_neighbors(
         self, col: int, row: int
@@ -114,30 +117,18 @@ class MazeGenerator:
         return neighbors
 
     def __compute_solution(self) -> None:
-        """Compute all possible solutions from entry to exit."""
-        self.solution.clear()
-        queue: deque[
-            tuple[
-                tuple[int, int],
-                list[str],
-                set[tuple[int, int]]
-            ]
-        ] = deque()
-        queue.append((self.entry, [], {self.entry}))
+        visited_sol = self.__write_42()
+        visited_sol[self.entry[1], self.entry[0]] = 1
+        queue: Deque[tuple[tuple[int, int], list[str]]] = deque([(self.entry, [])])        
         while queue:
-            position, sol, visited = queue.popleft()
-            if position == self.exit:
-                self.solution.append("".join(sol))
-            else:
-                neighbours = self.__accessible_neighbors(
-                    position[0],
-                    position[1]
-                )
-                for x, y, point in neighbours:
-                    if (x, y) not in visited:
-                        new_sol = sol + [point]
-                        new_visited = visited | {(x, y)}
-                        queue.append(((x, y), new_sol, new_visited))
+            (x, y), sol = queue.popleft()
+            if (x, y) == self.exit:
+                self.solution = "".join(sol)
+            neighbours = self.__accessible_neighbors(x, y)
+            for nx, ny, direction in neighbours:
+                if not visited_sol[ny, nx]:
+                    visited_sol[ny, nx] = 1
+                    queue.append(((nx, ny), sol + [direction]))
 
     def __get_available_walls(
             self, col: int, row: int
@@ -236,10 +227,6 @@ class MazeGenerator:
                 stack.append((ncol, nrow))
             else:
                 stack.pop()
-        self.__compute_solution()
         if not self.perfect:
             self.__make_no_perfect()
-            self.__compute_solution()
-            while len(self.solution) <= 1:
-                self.__make_no_perfect()
-                self.__compute_solution()
+        self.__compute_solution()
