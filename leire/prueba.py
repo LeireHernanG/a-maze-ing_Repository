@@ -41,7 +41,7 @@ def menu(output_file:str) -> int:
         elif valor == 3:
             print("\n=== Rotate maze colors ===")
             print("1. Mario bros")
-            print("2. Tasty banana")
+            print("2. Space")
             print("3. Hot pink")
             theme = input("Choose theme: ").strip()
             if not theme.isdigit():
@@ -58,8 +58,8 @@ def menu(output_file:str) -> int:
                 colors["42"]="#f2b603"
 
             elif theme == 2:
-                colors["wall"] = "#ffea00"
-                colors["corners"] = "#b04fff"
+                colors["wall"] = "#0984ff"
+                colors["corners"] = "#ffec1d"
                 colors["entry_icon_back"]="#86ff62"
                 colors["exit_icon_back"]="#ff5d5d"
                 colors["exit_icon_fore"]="#FFFFFF"
@@ -75,7 +75,7 @@ def menu(output_file:str) -> int:
                 colors["exit_icon_fore"]="#FFFFFF"
                 colors["path"]= "#ffff00"
                 colors["42"]="#f10d51"
-            create_lab(output_file)
+            #create_lab(output_file)
             return 3
         elif valor == 4:
             print("Good bye!")
