@@ -55,11 +55,12 @@ def read_configuration(file_name: str) -> dict[str, Any]:
     return config_dic
 
 
-def main(seed: bool | None = None) -> Any:
+def main(option_is_one: bool | None = None) -> Any:
     try:
         config = read_configuration('config.txt')
-        if seed:
-            config['SEED'] = random.randint(0, 100)
+        if option_is_one:
+            random.seed(random.randint(0, 1000))
+            config['SEED'] = random.randint(0, 1000)
         maze = MazeGenerator(
                                 width=config['WIDTH'],
                                 height=config['HEIGHT'],
@@ -86,7 +87,6 @@ def main(seed: bool | None = None) -> Any:
 if __name__ == '__main__':
     try:
         filename = main()
-        print(1)
         option = menu(filename)
         while option > 0:
             if option == 1:

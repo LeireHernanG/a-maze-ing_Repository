@@ -223,6 +223,7 @@ class MazeGenerator:
             Generate the maze using depth-first search and
             optionally add loops if imperfect.
         """
+        random.seed(self.seed)
         self._visited[self.entry[1], self.entry[0]] = 1
         stack = [(self.entry[0], self.entry[1])]
         while stack:
