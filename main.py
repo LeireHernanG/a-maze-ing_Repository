@@ -1,4 +1,4 @@
-from maze import MazeGenerator
+from generator import MazeGenerator
 import random
 from typing import Any
 from prueba import menu
@@ -65,7 +65,6 @@ def main(seed: bool | None = None) -> Any:
                                 height=config['HEIGHT'],
                                 entry=config['ENTRY'],
                                 exit=config['EXIT'],
-                                output_file=config['OUTPUT_FILE'],
                                 perfect=config['PERFECT'],
                                 seed=config['SEED']
         )
@@ -73,8 +72,8 @@ def main(seed: bool | None = None) -> Any:
         raise ValueError(e)
     random.seed(maze.seed)
     maze.gen_maze()
-    with open(maze.output_file, 'w') as file:
-        for row in maze.maze:
+    with open(config['OUTPUT_FILE'], 'w') as file:
+        for row in maze.structure:
             line = " ".join([f"{num:X}" for num in row])
             file.write(line)
             file.write('\n')
