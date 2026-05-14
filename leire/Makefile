@@ -2,15 +2,14 @@ PYTHON = python3
 
 PIP = pip
 
-SCRIPT = a_maze_ing.py
+SCRIPT = main.py config.txt
 
 all: install
 
 install:
 	$(PIP) install -r requirements.txt
 run:
-	$(PYTHON) main.py config.txt
-
+	$(PYTHON) $(SCRIPT)
 debug:
 	$(PYTHON) -m pdb $(SCRIPT)
 
