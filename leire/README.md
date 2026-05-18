@@ -1,36 +1,42 @@
-_Este proyecto ha sido creado como parte del currículo de 42 por pmieres- y lhernan-_
-# ⭐▁ ▂ ▃ ▅ ▆ ▇ ▌ A-Maze-Ing ▐ ▇ ▆ ▅ ▃ ▂ ▁⭐​
-## 📋 Descripción del proyecto
+*This project has been created as part of the 42 curriculum by pmieres- and lhernan-*
 
-**Push_swap** consiste en ordenar una lista de números enteros utilizando **dos stacks** (`a` y `b`) y un conjunto muy limitado de operaciones. El objetivo es generar la secuencia **más corta posible** de instrucciones para dejar la pila `a` ordenada en orden ascendente (el número más pequeño en la cima).
+# ⭐▁ ▂ ▃ ▅ ▆ ▇ ▌ A-Maze-Ing ▐ ▇ ▆ ▅ ▃ ▂ ▁⭐
 
-Características principales del proyecto:
+## 📋 Description
 
-- Múltiples algoritmos con diferentes complejidades: **O(n²)**, **O(n√n)**, **O(n log n)** y uno **adaptativo**
-- Selección inteligente del algoritmo según el **grado de desorden** de la entrada
-- Sistema de benchmark integrado para medir rendimiento
-- Manejo estricto de errores (duplicados, no enteros, overflow, etc.)
+**A-Maze-Ing** es un generador de laberintos escrito en Python que crea laberintos personalizables a partir de un archivo de configuración, garantiza una estructura válida (incluyendo el icónico patrón "42") y proporciona tanto una salida de archivo como una representación visual interactiva.
 
-## Instructions
-### 🚀 Compilación
+Características clave:
+- Generación de laberintos perfectos (camino único) o laberintos con ciclos
+- Generación reproducible mediante el uso de semillas (seeds).
+- Visualización en terminal mediante arte ASCII con colores.
+- Menú interactivo (regenerar, mostrar/ocultar solución, cambiar temas).
+- Paquete reutilizable MazeGenerator (mazegen-*).
+- Manejo estricto de errores y validación de configuración.
+
+---
+
+## 🚀 Instructions
+
+### Compilation & Execution
 
 ```bash
-make install        # Instala los requisitos necesarios(especificados en "requirements.txt")
+make install        # Instala las dependencias (requirements.txt)
 make run            # Ejecuta el programa
-make debug          # Comienza el debug
-make lint           # Cmprueba que las reglas e flake8 y mipy esten correctas
-make lint-stric     # ingual que e anterior pero con estricto
-make clean          #Limia el pycache
+make debug          # Inicia una sesión de depuración (pdb)
+make lint           # Verifica el código con flake8 + mypy
+make lint-strict    # Modo estricto de verificación
+make clean          # Limpia __pycache__ y archivos temporales
 ```
+### Debug Commands
 ```bash
-INSTRUCOMANDOS DEL DEBUG
-n	        #Next — ejecuta la línea actual y pasa a la siguiente
-s	        #Step — entra dentro de una función
-c	        #Continue — ejecuta hasta el siguiente breakpoint (o hasta el final)
-l	        #List — muestra el código alrededor de donde estás
-p variable	#Print — imprime el valor de una variable, ej: p self._estado
-b 42	    #Breakpoint — pone un punto de parada en la línea 42
-q	        #Quit — sale del debugger
+n           #Next — ejecuta la línea actual y pasa a la siguiente
+s           #Step — entra dentro de una función
+c           #Continue — ejecuta hasta el siguiente breakpoint (o hasta el final)
+l           #List — muestra el código alrededor de donde estás
+p variable  #Print — imprime el valor de una variable, ej: p self._estado
+b 42        #Breakpoint — pone un punto de parada en la línea 42
+q           #Quit — sale del debugger
 ```
 
 ## CONFIGURACIÓN
@@ -132,31 +138,48 @@ En caso de error saltara un aviso:
     HEIGHT=a
     Couldn't make the maze:The parameter 'HEIGHT' must an Integer
 ```
+## Algoritmo de Generación de Laberintos
+Elegimos el *Recursive Backtracker* (Búsqueda en Profundidad Aleatorizada).
+¿Por qué este algoritmo?
 
-## Algoritmos
+- Produce laberintos estéticamente agradables con pasillos largos y un buen nivel de desafío.
+- Es simple de implementar y depurar.
+- Ofrece un excelente rendimiento para los tamaños requeridos.
+- Garantiza de forma natural un laberinto perfecto (árbol de expansión) cuando `PERFECT=True`.
+- Es fácil de adaptar para laberintos no perfectos añadiendo ciclos aleatorios.
+
+## 👥 Equipo y Gestión del Proyecto
+
+- **pmieres-**: Algoritmos de generación de laberintos, lógica central, paquete reutilizable, formato de salida.
+- **lhernan-**: Visualización (ASCII + colores), menú interactivo, analizador de configuración (*parser*), manejo de errores, Makefile.
+
+Evolución de la planificación:
+Comenzamos con un *backtracker* básico + representación en cuadrícula. Luego separamos el generador en un paquete reutilizable. Finalmente nos enfocamos en la parte visual/interactiva y en los retoques finales.
+
+Qué funcionó bien:
+- Separación temprana de conceptos (generador frente a visualización).
+- Uso extensivo de pistas de tipo (*type hints*) y pruebas.
+- Buen manejo de errores desde el principio.
+
+Qué se podría mejorar:
+- Más pruebas unitarias para casos extremos (*edge cases*).
+- Animación durante la generación (puntos extra).
+
+Herramientas utilizadas:
+- Python 3.11, flake8, mypy, pytest
+- Git + GitHub
+- IA (ver más abajo)
 
 ## Recursos
-Referencias
-- Google : 
-    - Sorting algorithm 
-    - Visión general de algoritmos de ordenación.
-    - Radix sort explanation 
-    - Detalles sobre radix adaptado a stacks.
-    - Push_swap tutorial - Guía para implementar en stacks.
- #### Uso de IA
+Referencias:
+- Explicaciones e implementaciones de *Recursive Backtracker*.
+- Documentación de la asignatura de 42.
+- Foros y vídeos.
 
-Usamos IA para :
-- testers
-- En depuración: sugerencias para fixing bugs en rotaciones y indexing.
-- No se usó para código principal; revisamos y reescribimos todo manualmente para comprensión total.
-- Para el README: IA ayudó a estructurar y redactar secciones, pero contenido basado en nuestro trabajo.
+#### Uso de IA
 
-## Prubas para la correcion:
-#### Generas la lista una vez
-ARG=$(shuf -i 1-200 -n 50 | tr '\n' ' ')
-echo $ARG > input.txt
-
-#### Cada prueba usa la misma lista
-ARG=$(cat input.txt)
-./push_swap $ARG | tee ops.txt | ./checker_linux $ARG
-echo "Operaciones usadas:" $(wc -l < ops.txt)
+Usamos IA para:
+- Creación de pruebas (*testers*).
+- En depuración: sugerencias para solucionar errores (*bugs*) en las rotaciones y en la indexación.
+- No se usó para el código principal; revisamos y reescribimos todo manualmente para lograr una comprensión total.
+- Para el README: la IA ayudó a estructurar y redactar secciones, pero el contenido está basado en nuestro trabajo.
