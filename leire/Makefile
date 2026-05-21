@@ -21,7 +21,7 @@ lint:
 
 lint-strict:
 	flake8 . && \
-	mypy --strict . 
+	mypy --strict  .
 
 clean:
 	find . -type d -name "__pycache__" -exec rm -rf {} +  && rm -rf .mypy_cache

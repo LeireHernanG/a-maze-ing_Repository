@@ -2,7 +2,7 @@
 
 # ⭐▁ ▂ ▃ ▅ ▆ ▇ ▌ A-Maze-Ing ▐ ▇ ▆ ▅ ▃ ▂ ▁⭐
 
-## 📋 Description
+## 📋 Descripción
 
 **A-Maze-Ing** es un generador de laberintos escrito en Python que crea laberintos personalizables a partir de un archivo de configuración, garantiza una estructura válida (incluyendo el icónico patrón "42") y proporciona tanto una salida de archivo como una representación visual interactiva.
 
@@ -139,31 +139,203 @@ En caso de error saltara un aviso:
     Couldn't make the maze:The parameter 'HEIGHT' must an Integer
 ```
 ## Algoritmo de Generación de Laberintos
-Elegimos el *Recursive Backtracker* (Búsqueda en Profundidad Aleatorizada).
+Elegimos el *DFS Depht-Firt Search*.
 ¿Por qué este algoritmo?
 
 - Produce laberintos estéticamente agradables con pasillos largos y un buen nivel de desafío.
 - Es simple de implementar y depurar.
 - Ofrece un excelente rendimiento para los tamaños requeridos.
-- Garantiza de forma natural un laberinto perfecto (árbol de expansión) cuando `PERFECT=True`.
+- Garantiza de forma natural un laberinto perfecto cuando `PERFECT=True`.
 - Es fácil de adaptar para laberintos no perfectos añadiendo ciclos aleatorios.
+## INSTALACIÓN DE MODULO MAZEGENERATOR
+# mazegen
+
+A reusable Python package for maze generation and solving.
+
+---
+
+## Installation
+
+Build and install the package:
+
+```bash
+pip install build
+python -m build
+pip install dist/mazegen-0.1.0-py3-none-any.whl
+```
+
+You can also install the source archive:
+
+```bash
+pip install dist/mazegen-1.0.0.tar.gz
+```
+
+---
+
+## Basic Usage
+
+```python
+from mazegen import MazeGenerator
+
+maze = MazeGenerator(
+		width=5,
+		height=5,
+		entry=(0, 0),
+		exit=(3, 3),
+		perfect=False
+)
+
+maze.gen_maze()
+
+print(maze.structure())
+```
+
+---
+
+## Custom Parameters
+
+The generator accepts custom parameters such as seed.
+
+Example:
+
+```python
+from mazegen import MazeGenerator
+
+maze = MazeGenerator(
+		width=5,
+		height=5,
+		entry=(0, 0),
+		exit=(3, 3),
+		perfect=False,
+		seed=123
+)
+
+maze.generate()
+```
+
+### Parameters
+
+* `width` (`int`) :
+  Width of the maze.
+
+* `height` (`int`) :
+  Height of the maze.
+
+* `entry` (`tuple[int, int]`) :
+  Entry point coordinates (x, y).
+
+* `exit` (`tuple[int, int]`) :
+  Exit point coordinates (x, y).
+
+* `perfect` (`bool`) :
+  If True, generates a perfect maze (one solution).
+
+* `seed` (`int`, optional) :
+  Random seed used to generate reproducible mazes.
+
+---
+
+## Accessing the Maze Structure
+
+The generated maze structure can be accessed directly from the generator.
+
+Example:
+
+```python
+structure = maze.structure
+
+print(structure)
+```
+---
+
+## Accessing a Maze Solution
+
+The module also provides the  shortest solution path.
+
+Example:
+
+```python
+solution = maze.solution
+
+# Shortest solution
+print(solution)
+```
+
+The solution is returned as a sequence of coordinates representing a valid path from the maze entrance to the exit.
+
+---
+
+## Example
+
+```python
+from mazegen import MazeGenerator
+
+maze = MazeGenerator(
+		width=5,
+		height=5,
+		entry=(0, 0),
+		exit=(3, 3),
+		perfect=False,
+		seed=123
+)
+
+maze.gen_maze()
+
+print("Maze structure:")
+print(maze.structure)
+
+print("Maze solution:")
+print(maze.solution[0])
+```
+
+---
+
+## Package Structure
+
+```text
+mazegen/
+├── __init__.py
+└── generator.py
+```
+
+Main class:
+
+* `MazeGenerator`
+
+---
+
+## Build Instructions
+
+To rebuild the package from source:
+
+```bash
+python -m pip install --upgrade build
+python -m build
+```
+
+Generated files will be available inside the `dist/` directory.
+
+Example:
+
+```text
+dist/
+├── mazegen-1.0.0.tar.gz
+└── mazegen-1.0.0-py3-none-any.whl
+```
+
 
 ## 👥 Equipo y Gestión del Proyecto
 
-- **pmieres-**: Algoritmos de generación de laberintos, lógica central, paquete reutilizable, formato de salida.
-- **lhernan-**: Visualización (ASCII + colores), menú interactivo, analizador de configuración (*parser*), manejo de errores, Makefile.
+- **pmieres-**: Algoritmos de generación de laberintos, paquete reutilizable, parser y manejo de errores
+- **lhernan-**: Visualización (ASCII + colores), menú interactivo,formato de salida y Makefile.
 
 Evolución de la planificación:
-Comenzamos con un *backtracker* básico + representación en cuadrícula. Luego separamos el generador en un paquete reutilizable. Finalmente nos enfocamos en la parte visual/interactiva y en los retoques finales.
+Comenzamos con el algoritmo basico + representación en cuadrícula. Luego separamos el generador en un paquete reutilizable. Finalmente nos enfocamos en la parte visual/interactiva y en los retoques finales.
 
 Qué funcionó bien:
 - Separación temprana de conceptos (generador frente a visualización).
 - Uso extensivo de pistas de tipo (*type hints*) y pruebas.
 - Buen manejo de errores desde el principio.
-
-Qué se podría mejorar:
-- Más pruebas unitarias para casos extremos (*edge cases*).
-- Animación durante la generación (puntos extra).
 
 Herramientas utilizadas:
 - Python 3.11, flake8, mypy, pytest
